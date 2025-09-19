@@ -1,7 +1,11 @@
-import { ShoppingCart, User, Search, Menu } from "lucide-react";
+import { ShoppingCart, User, Search, Menu, LogOut, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
+import { signOut } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/sn-logo.png";
 
 interface HeaderProps {
@@ -11,6 +15,25 @@ interface HeaderProps {
 }
 
 export const Header = ({ cartCount = 0, onCartClick, onLoginClick }: HeaderProps) => {
+  const { isAuthenticated, profile } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out",
+      });
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
@@ -38,10 +61,33 @@ export const Header = ({ cartCount = 0, onCartClick, onLoginClick }: HeaderProps
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onLoginClick}>
-            <User className="h-4 w-4" />
-            <span className="hidden sm:inline ml-2">Login</span>
-          </Button>
+          {isAuthenticated && profile ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <UserCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2">
+                    {profile.full_name || profile.email}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  <User className="h-4 w-4 mr-2" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={onLoginClick}>
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">Login</span>
+            </Button>
+          )}
           
           <Button variant="ghost" size="sm" onClick={onCartClick} className="relative">
             <ShoppingCart className="h-4 w-4" />

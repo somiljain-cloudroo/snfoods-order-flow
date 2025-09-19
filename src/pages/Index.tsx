@@ -1,41 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
-import { ProductCard } from "@/components/ProductCard";
+import { ProductCardDB } from "@/components/ProductCardDB";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { Cart } from "@/components/Cart";
-import { products, categories, type Product } from "@/data/products";
+import { AuthModal } from "@/components/AuthModal";
+import { CheckoutModal } from "@/components/CheckoutModal";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Package, Users, Award, ArrowRight } from "lucide-react";
+import { ShoppingCart, Package, Users, Award, ArrowRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useProducts } from "@/hooks/useProducts";
+import { Database } from '@/lib/supabase';
 import heroBanner from "@/assets/hero-banner.jpg";
+
+type Product = Database['public']['Tables']['products']['Row'] & {
+  category?: Database['public']['Tables']['categories']['Row'];
+};
 
 interface CartItem {
   id: string;
   name: string;
-  brand: string;
+  brand: string | null;
   price: number;
   quantity: number;
   unit: string;
+  sku: string | null;
 }
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const { toast } = useToast();
+  const { user, profile, loading: authLoading, isAuthenticated } = useAuth();
+  const { products, categories, loading: productsLoading, error: productsError, getProductsByCategory } = useProducts();
 
-  const filteredProducts = selectedCategory === "all" 
-    ? products 
-    : products.filter(product => product.category === selectedCategory);
+  const filteredProducts = getProductsByCategory(selectedCategory);
 
-  const handleAddToCart = (productId: string, quantity: number) => {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
+  const handleAddToCart = (product: Product, quantity: number) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to add items to your cart",
+      });
+      setShowAuthModal(true);
+      return;
+    }
 
     setCartItems(prev => {
-      const existing = prev.find(item => item.id === productId);
+      const existing = prev.find(item => item.id === product.id);
       if (existing) {
         return prev.map(item =>
-          item.id === productId
+          item.id === product.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
@@ -46,7 +63,8 @@ const Index = () => {
         brand: product.brand,
         price: product.price,
         quantity,
-        unit: product.unit
+        unit: product.unit,
+        sku: product.sku
       }];
     });
 
@@ -77,18 +95,65 @@ const Index = () => {
   };
 
   const handleCheckout = () => {
-    toast({
-      title: "Checkout Started",
-      description: "Redirecting to checkout... (Connect Supabase for full functionality)",
-    });
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Please add items to your cart before checkout",
+      });
+      return;
+    }
+
+    setShowCheckoutModal(true);
   };
 
   const handleLogin = () => {
+    setShowAuthModal(true);
+  };
+
+  const handleAuthSuccess = () => {
     toast({
-      title: "Login Required",
-      description: "Please connect Supabase to enable authentication",
+      title: "Success!",
+      description: "You are now logged in and can place orders.",
     });
   };
+
+  const handleCheckoutSuccess = () => {
+    setCartItems([]);
+    toast({
+      title: "Order Placed!",
+      description: "Your sales order has been submitted and is pending approval.",
+    });
+  };
+
+  // Loading state
+  if (authLoading || productsLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading your store...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (productsError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Unable to load products</h2>
+          <p className="text-muted-foreground mb-4">{productsError}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    );
+  }
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -98,6 +163,19 @@ const Index = () => {
         cartCount={cartCount}
         onCartClick={() => {}}
         onLoginClick={handleLogin}
+      />
+      
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
+      
+      <CheckoutModal 
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        cartItems={cartItems}
+        onSuccess={handleCheckoutSuccess}
       />
 
       {/* Hero Section */}
@@ -168,21 +246,34 @@ const Index = () => {
 
           <div className="mb-8">
             <CategoryFilter
-              categories={categories}
+              categories={categories.map(cat => cat.name)}
               selectedCategory={selectedCategory}
               onCategoryChange={setSelectedCategory}
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
-          </div>
+          {filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map((product) => (
+                <ProductCardDB
+                  key={product.id}
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">No products found</h3>
+              <p className="text-muted-foreground">
+                {selectedCategory === 'all' 
+                  ? 'No products are currently available'
+                  : `No products found in the ${selectedCategory} category`
+                }
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
