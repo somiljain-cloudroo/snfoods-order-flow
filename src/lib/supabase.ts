@@ -1,5 +1,9 @@
-// Re-export the supabase client from integrations
-export { supabase } from '@/integrations/supabase/client'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = "https://jdouvqndemcidjjkepgm.supabase.co"
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impkb3V2cW5kZW1jaWRqamtlcGdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyNDA0ODEsImV4cCI6MjA3MzgxNjQ4MX0.qEI2HGWh5zBQLI9f8tK99svbVRojbR3VMZwguRZnxJ4"
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Database types
 export interface Database {
@@ -178,6 +182,36 @@ export interface Database {
           unit_price?: number
           total_price?: number
         }
+      }
+      order_status_history: {
+        Row: {
+          id: string
+          order_id: string
+          old_status: string | null
+          new_status: string
+          changed_by: string
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          order_id: string
+          old_status?: string | null
+          new_status: string
+          changed_by: string
+          notes?: string | null
+        }
+        Update: {
+          old_status?: string | null
+          new_status?: string
+          changed_by?: string
+          notes?: string | null
+        }
+      }
+    }
+    Functions: {
+      generate_order_number: {
+        Args: {}
+        Returns: string
       }
     }
   }
