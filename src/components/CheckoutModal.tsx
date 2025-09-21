@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CreditCard, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
+import { AccountSelector } from "./AccountSelector";
 
 interface CartItem {
   id: string;
@@ -28,6 +29,7 @@ interface CheckoutModalProps {
 
 export const CheckoutModal = ({ isOpen, onClose, cartItems, onSuccess }: CheckoutModalProps) => {
   const [notes, setNotes] = useState("");
+  const [selectedContext, setSelectedContext] = useState("individual");
   const { createOrder, loading } = useOrders();
   const { toast } = useToast();
 
@@ -47,7 +49,8 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, onSuccess }: Checkou
       return;
     }
 
-    const result = await createOrder(cartItems, notes);
+    const accountId = selectedContext === "individual" ? undefined : selectedContext;
+    const result = await createOrder(cartItems, notes, accountId);
     
     if (result.success && result.order) {
       toast({
@@ -57,6 +60,7 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, onSuccess }: Checkou
       onSuccess();
       onClose();
       setNotes("");
+      setSelectedContext("individual");
     } else {
       toast({
         title: "Order Failed",
@@ -77,6 +81,21 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, onSuccess }: Checkou
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Ordering Context */}
+          <div className="space-y-2">
+            <Label htmlFor="ordering-context" className="text-base font-medium">
+              Ordering Context
+            </Label>
+            <AccountSelector
+              value={selectedContext}
+              onValueChange={setSelectedContext}
+              placeholder="Select how to place this order..."
+              className="w-full"
+            />
+          </div>
+
+          <Separator />
+
           {/* Order Summary */}
           <div className="space-y-4">
             <h3 className="font-semibold">Order Summary</h3>

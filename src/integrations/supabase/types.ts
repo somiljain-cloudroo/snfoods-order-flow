@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          account_number: string | null
+          account_type: string
+          billing_address: string | null
+          billing_city: string | null
+          billing_country: string | null
+          billing_postal_code: string | null
+          billing_state: string | null
+          created_at: string
+          credit_limit: number | null
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          payment_terms: number | null
+          phone: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_country: string | null
+          shipping_postal_code: string | null
+          shipping_state: string | null
+          tax_id: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          account_type?: string
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_country?: string | null
+          billing_postal_code?: string | null
+          billing_state?: string | null
+          created_at?: string
+          credit_limit?: number | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          payment_terms?: number | null
+          phone?: string | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_postal_code?: string | null
+          shipping_state?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          account_type?: string
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_country?: string | null
+          billing_postal_code?: string | null
+          billing_state?: string | null
+          created_at?: string
+          credit_limit?: number | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          payment_terms?: number | null
+          phone?: string | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_postal_code?: string | null
+          shipping_state?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -40,6 +121,57 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      contact_account_relationships: {
+        Row: {
+          account_id: string
+          can_manage_account: boolean
+          can_place_orders: boolean
+          can_view_orders: boolean
+          contact_id: string
+          created_at: string
+          id: string
+          is_primary_contact: boolean
+          relationship_type: string
+        }
+        Insert: {
+          account_id: string
+          can_manage_account?: boolean
+          can_place_orders?: boolean
+          can_view_orders?: boolean
+          contact_id: string
+          created_at?: string
+          id?: string
+          is_primary_contact?: boolean
+          relationship_type?: string
+        }
+        Update: {
+          account_id?: string
+          can_manage_account?: boolean
+          can_place_orders?: boolean
+          can_view_orders?: boolean
+          contact_id?: string
+          created_at?: string
+          id?: string
+          is_primary_contact?: boolean
+          relationship_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_account_relationships_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_account_relationships_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
@@ -126,6 +258,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          account_id: string | null
           approved_at: string | null
           approved_by: string | null
           created_at: string
@@ -134,6 +267,7 @@ export type Database = {
           myob_invoice_id: string | null
           notes: string | null
           order_number: string
+          ordered_by_contact_id: string | null
           status: string
           subtotal: number
           tax_amount: number
@@ -141,6 +275,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
@@ -149,6 +284,7 @@ export type Database = {
           myob_invoice_id?: string | null
           notes?: string | null
           order_number: string
+          ordered_by_contact_id?: string | null
           status?: string
           subtotal: number
           tax_amount?: number
@@ -156,6 +292,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
@@ -164,13 +301,29 @@ export type Database = {
           myob_invoice_id?: string | null
           notes?: string | null
           order_number?: string
+          ordered_by_contact_id?: string | null
           status?: string
           subtotal?: number
           tax_amount?: number
           total_amount?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_ordered_by_contact_id_fkey"
+            columns: ["ordered_by_contact_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -236,12 +389,15 @@ export type Database = {
           address: string | null
           city: string | null
           company_name: string | null
+          contact_type: string | null
           country: string | null
           created_at: string
+          department: string | null
           email: string
           full_name: string | null
           id: string
           is_active: boolean
+          job_title: string | null
           phone: string | null
           postal_code: string | null
           role: string
@@ -252,12 +408,15 @@ export type Database = {
           address?: string | null
           city?: string | null
           company_name?: string | null
+          contact_type?: string | null
           country?: string | null
           created_at?: string
+          department?: string | null
           email: string
           full_name?: string | null
           id: string
           is_active?: boolean
+          job_title?: string | null
           phone?: string | null
           postal_code?: string | null
           role?: string
@@ -268,12 +427,15 @@ export type Database = {
           address?: string | null
           city?: string | null
           company_name?: string | null
+          contact_type?: string | null
           country?: string | null
           created_at?: string
+          department?: string | null
           email?: string
           full_name?: string | null
           id?: string
           is_active?: boolean
+          job_title?: string | null
           phone?: string | null
           postal_code?: string | null
           role?: string
@@ -287,6 +449,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_account_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_order_number: {
         Args: Record<PropertyKey, never>
         Returns: string

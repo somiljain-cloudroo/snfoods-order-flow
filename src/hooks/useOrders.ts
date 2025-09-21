@@ -3,7 +3,18 @@ import { supabase } from '@/lib/supabase';
 import { Database } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 
-type Order = Database['public']['Tables']['orders']['Row'];
+type Order = Database['public']['Tables']['orders']['Row'] & {
+  account?: {
+    id: string;
+    name: string;
+    account_number: string;
+  };
+  ordered_by_contact?: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+};
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
 
@@ -22,7 +33,7 @@ export function useOrders() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const createOrder = async (cartItems: CartItem[], notes?: string) => {
+  const createOrder = async (cartItems: CartItem[], notes?: string, accountId?: string): Promise<{ success: boolean; orderId?: string; order?: any; error?: string }> => {
     if (!user) {
       throw new Error('User not authenticated');
     }
@@ -43,9 +54,12 @@ export function useOrders() {
       if (orderNumberError) throw orderNumberError;
 
       // Create order
-      const orderData: OrderInsert = {
+      const orderData: any = {
         order_number: orderNumberData,
-        customer_id: user.id,
+        ...(accountId 
+          ? { account_id: accountId, ordered_by_contact_id: user.id, customer_id: null } 
+          : { customer_id: user.id, account_id: null, ordered_by_contact_id: null }
+        ),
         subtotal: Number(subtotal.toFixed(2)),
         tax_amount: Number(taxAmount.toFixed(2)),
         total_amount: Number(totalAmount.toFixed(2)),
@@ -88,7 +102,7 @@ export function useOrders() {
 
       if (historyError) throw historyError;
 
-      return { order, success: true };
+      return { order, success: true, orderId: order.id };
     } catch (err) {
       console.error('Error creating order:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create order';
@@ -110,12 +124,13 @@ export function useOrders() {
         .from('orders')
         .select(`
           *,
+          account:accounts(id, name, account_number),
+          ordered_by_contact:profiles(id, full_name, email),
           order_items (
             *,
             product:products (*)
           )
         `)
-        .eq('customer_id', user.id)
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
@@ -140,11 +155,9 @@ export function useOrders() {
         .from('orders')
         .select(`
           *,
-          customer:profiles (
-            full_name,
-            email,
-            company_name
-          ),
+          profiles!orders_customer_id_fkey(full_name, email, company_name),
+          account:accounts(id, name, account_number),
+          ordered_by_contact:profiles!orders_ordered_by_contact_id_fkey(id, full_name, email),
           order_items (
             *,
             product:products (*)
