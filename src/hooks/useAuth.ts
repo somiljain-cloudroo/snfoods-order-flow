@@ -41,7 +41,29 @@ export function useAuth() {
   const loadProfile = async (userId: string) => {
     try {
       const { profile, error } = await getCurrentProfile();
-      if (error) {
+      if (error && error.message?.includes('Cannot coerce the result to a single JSON object')) {
+        // Profile doesn't exist, create a basic one
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              email: user.email!,
+              full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+              role: 'customer',
+              contact_type: 'primary'
+            });
+          
+          if (!insertError) {
+            // Reload the profile after creating it
+            const { profile: newProfile } = await getCurrentProfile();
+            setProfile(newProfile);
+          } else {
+            console.error('Error creating profile:', insertError);
+          }
+        }
+      } else if (error) {
         console.error('Error loading profile:', error);
       } else {
         setProfile(profile);
