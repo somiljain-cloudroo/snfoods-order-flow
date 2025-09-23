@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { signUp, signIn } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -40,7 +40,10 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await signIn(signInData.email, signInData.password);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: signInData.email,
+        password: signInData.password,
+      });
       
       if (error) {
         toast({
@@ -94,12 +97,19 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await signUp(
-        signUpData.email,
-        signUpData.password,
-        signUpData.fullName,
-        signUpData.companyName
-      );
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: signUpData.email,
+        password: signUpData.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: signUpData.fullName,
+            company_name: signUpData.companyName,
+          },
+        },
+      });
       
       if (error) {
         toast({

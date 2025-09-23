@@ -10,7 +10,7 @@ import { ShoppingCart, Package, Users, Award, ArrowRight, Loader2 } from "lucide
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
-import { Database } from '@/lib/supabase';
+import { Database } from '@/integrations/supabase/types';
 import heroBanner from "@/assets/hero-banner.jpg";
 
 type Product = Database['public']['Tables']['products']['Row'] & {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, getCurrentProfile } from '@/lib/supabase';
-import { Database } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -40,7 +40,12 @@ export function useAuth() {
 
   const loadProfile = async (userId: string) => {
     try {
-      const { profile, error } = await getCurrentProfile();
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
       if (error && error.message?.includes('Cannot coerce the result to a single JSON object')) {
         // Profile doesn't exist, create a basic one
         const { data: { user } } = await supabase.auth.getUser();
@@ -57,8 +62,15 @@ export function useAuth() {
           
           if (!insertError) {
             // Reload the profile after creating it
-            const { profile: newProfile } = await getCurrentProfile();
-            setProfile(newProfile);
+            const { data: newProfile, error: newProfileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single();
+            
+            if (!newProfileError) {
+              setProfile(newProfile);
+            }
           } else {
             console.error('Error creating profile:', insertError);
           }

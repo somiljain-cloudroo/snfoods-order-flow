@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
-import { signOut } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/sn-logo.png";
 
@@ -19,7 +19,7 @@ export const Header = ({ cartCount = 0, onCartClick, onLoginClick }: HeaderProps
   const { toast } = useToast();
 
   const handleSignOut = async () => {
-    const { error } = await signOut();
+    const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
         title: "Error",
