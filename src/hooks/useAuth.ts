@@ -44,9 +44,15 @@ export function useAuth() {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
-      if (error && error.message?.includes('Cannot coerce the result to a single JSON object')) {
+      if (error) {
+        console.error('Error loading profile:', error);
+        setLoading(false);
+        return;
+      }
+      
+      if (!profile) {
         // Profile doesn't exist, create a basic one
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -66,17 +72,15 @@ export function useAuth() {
               .from('profiles')
               .select('*')
               .eq('id', user.id)
-              .single();
+              .maybeSingle();
             
-            if (!newProfileError) {
+            if (!newProfileError && newProfile) {
               setProfile(newProfile);
             }
           } else {
             console.error('Error creating profile:', insertError);
           }
         }
-      } else if (error) {
-        console.error('Error loading profile:', error);
       } else {
         setProfile(profile);
       }
