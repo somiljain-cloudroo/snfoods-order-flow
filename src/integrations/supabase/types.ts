@@ -449,6 +449,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_account_relationship: {
+        Args: { target_account_id: string; user_id: string }
+        Returns: boolean
+      }
       generate_account_number: {
         Args: Record<PropertyKey, never>
         Returns: string
