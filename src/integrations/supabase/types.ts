@@ -262,7 +262,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           created_at: string
-          customer_id: string
+          customer_id: string | null
           id: string
           myob_invoice_id: string | null
           notes: string | null
@@ -279,7 +279,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
-          customer_id: string
+          customer_id?: string | null
           id?: string
           myob_invoice_id?: string | null
           notes?: string | null
@@ -296,7 +296,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
-          customer_id?: string
+          customer_id?: string | null
           id?: string
           myob_invoice_id?: string | null
           notes?: string | null
