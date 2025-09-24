@@ -12,29 +12,37 @@ export function useAuth() {
 
   useEffect(() => {
     console.log('useAuth: Initializing auth state');
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth changes
+    
+    // Listen for auth changes FIRST (synchronous only!)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        console.log('useAuth: Auth state changed', event, !!session?.user);
         setUser(session?.user ?? null);
         
+        // Defer any Supabase calls to prevent deadlock
         if (session?.user) {
-          await loadProfile(session.user.id);
+          setTimeout(() => {
+            loadProfile(session.user.id);
+          }, 0);
         } else {
           setProfile(null);
           setLoading(false);
         }
       }
     );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('useAuth: Initial session check', !!session?.user);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        setTimeout(() => {
+          loadProfile(session.user.id);
+        }, 0);
+      } else {
+        setLoading(false);
+      }
+    });
 
     return () => subscription.unsubscribe();
   }, []);
