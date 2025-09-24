@@ -20,6 +20,7 @@ export function useProducts() {
 
   const loadData = async () => {
     try {
+      console.log('useProducts: Starting to load data');
       setLoading(true);
       
       // Load categories
@@ -46,6 +47,7 @@ export function useProducts() {
       setCategories(categoriesData || []);
       setProducts(productsData || []);
       setError(null);
+      console.log('useProducts: Data loaded successfully', { products: productsData?.length, categories: categoriesData?.length });
     } catch (err) {
       console.error('Error loading data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');

@@ -36,6 +36,9 @@ const Index = () => {
   const { user, profile, loading: authLoading, isAuthenticated } = useAuth();
   const { products, categories, loading: productsLoading, error: productsError, getProductsByCategory } = useProducts();
 
+  // Debug logging
+  console.log('Index loading states:', { authLoading, productsLoading, productsError, productsCount: products.length });
+
   const filteredProducts = getProductsByCategory(selectedCategory);
 
   const handleAddToCart = (product: Product, quantity: number) => {
