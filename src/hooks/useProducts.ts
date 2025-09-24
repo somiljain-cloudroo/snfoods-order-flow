@@ -22,17 +22,24 @@ export function useProducts() {
     try {
       console.log('useProducts: Starting to load data');
       setLoading(true);
+      setError(null);
       
       // Load categories
+      console.log('useProducts: Loading categories');
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
         .eq('is_active', true)
         .order('name');
 
-      if (categoriesError) throw categoriesError;
+      if (categoriesError) {
+        console.error('useProducts: Categories error:', categoriesError);
+        throw categoriesError;
+      }
+      console.log('useProducts: Categories loaded:', categoriesData?.length);
 
       // Load products with category info
+      console.log('useProducts: Loading products');
       const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select(`
@@ -42,16 +49,21 @@ export function useProducts() {
         .eq('is_active', true)
         .order('name');
 
-      if (productsError) throw productsError;
+      if (productsError) {
+        console.error('useProducts: Products error:', productsError);
+        throw productsError;
+      }
+      console.log('useProducts: Products loaded:', productsData?.length);
 
       setCategories(categoriesData || []);
       setProducts(productsData || []);
       setError(null);
       console.log('useProducts: Data loaded successfully', { products: productsData?.length, categories: categoriesData?.length });
     } catch (err) {
-      console.error('Error loading data:', err);
+      console.error('useProducts: Error loading data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
+      console.log('useProducts: Setting loading to false');
       setLoading(false);
     }
   };

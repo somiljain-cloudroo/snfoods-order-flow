@@ -41,6 +41,7 @@ export function useAuth() {
 
   const loadProfile = async (userId: string) => {
     try {
+      console.log('useAuth: Loading profile for user:', userId);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -48,13 +49,16 @@ export function useAuth() {
         .maybeSingle();
       
       if (error) {
-        console.error('Error loading profile:', error);
+        console.error('useAuth: Error loading profile:', error);
         setLoading(false);
         return;
       }
       
+      console.log('useAuth: Profile query result:', { profile, hasProfile: !!profile });
+      
       if (!profile) {
         // Profile doesn't exist, create a basic one
+        console.log('useAuth: No profile found, creating new profile');
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { error: insertError } = await supabase
@@ -68,6 +72,7 @@ export function useAuth() {
             });
           
           if (!insertError) {
+            console.log('useAuth: Profile created, reloading profile');
             // Reload the profile after creating it
             const { data: newProfile, error: newProfileError } = await supabase
               .from('profiles')
@@ -76,18 +81,23 @@ export function useAuth() {
               .maybeSingle();
             
             if (!newProfileError && newProfile) {
+              console.log('useAuth: New profile loaded:', newProfile);
               setProfile(newProfile);
+            } else {
+              console.error('useAuth: Error loading new profile:', newProfileError);
             }
           } else {
-            console.error('Error creating profile:', insertError);
+            console.error('useAuth: Error creating profile:', insertError);
           }
         }
       } else {
+        console.log('useAuth: Existing profile loaded:', profile);
         setProfile(profile);
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error('useAuth: Error loading profile:', error);
     } finally {
+      console.log('useAuth: Setting loading to false');
       setLoading(false);
     }
   };
