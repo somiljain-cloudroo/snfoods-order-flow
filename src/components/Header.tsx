@@ -15,7 +15,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ cartCount = 0, onCartClick, onLoginClick }: HeaderProps) => {
-  const { isAuthenticated, profile } = useAuth();
+  const { isAuthenticated, profile, isAdmin, isSalesAdmin } = useAuth();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
@@ -72,6 +72,14 @@ export const Header = ({ cartCount = 0, onCartClick, onLoginClick }: HeaderProps
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {(isAdmin || isSalesAdmin) && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="flex items-center">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Admin Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem>
                   <User className="h-4 w-4 mr-2" />
                   Profile
