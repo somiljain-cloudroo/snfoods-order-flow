@@ -1,4 +1,5 @@
-import { ShoppingCart, User, Search, Menu, LogOut, UserCheck } from "lucide-react";
+import { ShoppingCart, User, Search, Menu, LogOut, UserCheck, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -80,9 +81,11 @@ export const Header = ({ cartCount = 0, onCartClick, onLoginClick }: HeaderProps
                     </Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem>
-                  <User className="h-4 w-4 mr-2" />
-                  Profile
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center">
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="h-4 w-4 mr-2" />

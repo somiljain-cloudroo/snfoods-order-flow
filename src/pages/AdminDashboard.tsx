@@ -19,6 +19,7 @@ import { ProductManagement } from "@/components/admin/ProductManagement";
 import { AccountManagement } from "@/components/admin/AccountManagement";
 import { UserInvitation } from "@/components/admin/UserInvitation";
 import { AdminStats } from "@/components/admin/AdminStats";
+import { AccountContactRelationship } from "@/components/admin/AccountContactRelationship";
 
 const AdminDashboard = () => {
   const { isAdmin, isSalesAdmin, loading } = useAuth();
@@ -45,6 +46,7 @@ const AdminDashboard = () => {
     { id: "products", label: "Products", icon: Package },
     { id: "accounts", label: "Accounts", icon: Building2 },
     { id: "users", label: "Invite Users", icon: UserPlus },
+    { id: "account-contacts", label: "Account Contacts", icon: Settings },
   ];
 
   const renderContent = () => {
@@ -59,6 +61,8 @@ const AdminDashboard = () => {
         return <AccountManagement />;
       case "users":
         return <UserInvitation />;
+      case "account-contacts":
+        return <AccountContactRelationship />;
       default:
         return <AdminStats />;
     }

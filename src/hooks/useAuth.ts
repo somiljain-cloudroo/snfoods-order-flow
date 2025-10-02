@@ -19,6 +19,10 @@ export function useAuth() {
         console.log('useAuth: Auth state changed', event, !!session?.user);
         setUser(session?.user ?? null);
         
+        if (event === "PASSWORD_RECOVERY") {
+          window.location.href = "/reset-password";
+        }
+
         // Defer any Supabase calls to prevent deadlock
         if (session?.user) {
           setTimeout(() => {
@@ -114,9 +118,9 @@ export function useAuth() {
     user,
     profile,
     loading,
-    isAuthenticated: !!user,
-    isAdmin: profile?.role === 'admin',
-    isSalesAdmin: profile?.role === 'sales_admin' || profile?.role === 'admin',
+    isAuthenticated: !loading && !!user,
+    isAdmin: !loading && profile?.role === 'admin',
+    isSalesAdmin: !loading && (profile?.role === 'sales_admin' || profile?.role === 'admin'),
     refetch: () => user && loadProfile(user.id),
   };
 }

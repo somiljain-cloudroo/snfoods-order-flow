@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Product {
   id: string;
@@ -22,6 +23,7 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
+  const { isAuthenticated } = useAuth();
   const [quantity, setQuantity] = useState(product.minOrder || 1);
 
   const handleQuantityChange = (change: number) => {
@@ -65,8 +67,14 @@ export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">per {product.unit}</p>
+              {isAuthenticated ? (
+                <>
+                  <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">per {product.unit}</p>
+                </>
+              ) : (
+                <p className="text-sm font-medium text-primary">Login to see price</p>
+              )}
               {product.minOrder && (
                 <p className="text-xs text-muted-foreground">Min order: {product.minOrder}</p>
               )}
@@ -76,7 +84,7 @@ export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
       </CardContent>
       
       <CardFooter className="p-4 pt-0 space-y-3">
-        {product.inStock ? (
+        {isAuthenticated && product.inStock ? (
           <>
             <div className="flex items-center justify-center gap-2 w-full">
               <Button 
@@ -105,6 +113,10 @@ export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
               Add to Cart
             </Button>
           </>
+        ) : !isAuthenticated ? (
+          <Button disabled className="w-full">
+            Login to Add to Cart
+          </Button>
         ) : (
           <Button disabled className="w-full">
             Out of Stock

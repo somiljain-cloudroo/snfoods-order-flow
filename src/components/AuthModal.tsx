@@ -18,6 +18,7 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const { toast } = useToast();
 
   // Sign In Form State
@@ -139,6 +140,84 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(signInData.email, {
+        redirectTo: `${window.location.origin}/`,
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Please check your email for a link to reset your password.",
+      });
+      setIsResettingPassword(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isResettingPassword) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md bg-gradient-card">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl font-semibold bg-gradient-primary bg-clip-text text-transparent">
+              Reset Password
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                value={signInData.email}
+                onChange={(e) => setSignInData(prev => ({ ...prev, email: e.target.value }))}
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-primary hover:bg-gradient-warm"
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send Reset Link
+            </Button>
+            <div className="text-center">
+              <Button
+                type="button"
+                variant="link"
+                className="text-sm text-gray-500 hover:text-gray-700"
+                onClick={() => setIsResettingPassword(false)}
+              >
+                Back to Sign In
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md bg-gradient-card">
@@ -195,6 +274,16 @@ export const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
+              <div className="text-center">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                  onClick={() => setIsResettingPassword(true)}
+                >
+                  Forgot Password?
+                </Button>
+              </div>
             </form>
           </TabsContent>
 

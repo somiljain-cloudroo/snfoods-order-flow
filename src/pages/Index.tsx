@@ -30,7 +30,7 @@ interface CartItem {
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(true);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const { toast } = useToast();
   const { user, profile, loading: authLoading, isAuthenticated } = useAuth();

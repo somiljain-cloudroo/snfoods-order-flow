@@ -30,8 +30,9 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Edit, Trash2, RefreshCw, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import Papa from "papaparse";
 
 interface Product {
   id: string;
@@ -61,6 +62,9 @@ export const ProductManagement = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const { toast } = useToast();
 
@@ -221,6 +225,88 @@ export const ProductManagement = () => {
     }
   };
 
+  const handleBulkUpload = async () => {
+    if (!csvFile) {
+      toast({
+        title: "No file selected",
+        description: "Please select a CSV file to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    Papa.parse(csvFile, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const productsToInsert = results.data
+          .map((row: any) => ({
+            name: row.name,
+            description: row.description || null,
+            price: parseFloat(row.price),
+            sku: row.sku || null,
+            brand: row.brand || null,
+            category_id:
+              categories.find((c) => c.name === row.category)?.id || null,
+            stock_quantity: parseInt(row.stock_quantity),
+            min_order_quantity: parseInt(row.min_order_quantity) || 1,
+            unit: row.unit || "each",
+            image_url: row.image_url || null,
+          }))
+          .filter((p) => p.name && p.price && p.stock_quantity);
+
+        if (productsToInsert.length === 0) {
+          toast({
+            title: "No valid products found",
+            description:
+              "The CSV file is empty or does not contain valid product data.",
+            variant: "destructive",
+          });
+          setIsUploading(false);
+          return;
+        }
+
+        try {
+          const { error } = await supabase
+            .from("products")
+            .insert(productsToInsert);
+
+          if (error) throw error;
+
+          toast({
+            title: "Success",
+            description: `${productsToInsert.length} products uploaded successfully.`,
+          });
+
+          setIsBulkUploadOpen(false);
+          setCsvFile(null);
+          fetchData();
+        } catch (error) {
+          console.error("Error bulk inserting products:", error);
+          toast({
+            title: "Error",
+            description:
+              "Failed to upload products. Check the console for details.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsUploading(false);
+        }
+      },
+      error: (error) => {
+        console.error("Error parsing CSV:", error);
+        toast({
+          title: "Error",
+          description: "Failed to parse CSV file.",
+          variant: "destructive",
+        });
+        setIsUploading(false);
+      },
+    });
+  };
+
   if (loading) {
     return (
       <Card>
@@ -251,6 +337,10 @@ export const ProductManagement = () => {
           <Button onClick={fetchData} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
+          </Button>
+          <Button onClick={() => setIsBulkUploadOpen(true)} variant="outline">
+            <Upload className="h-4 w-4 mr-2" />
+            Bulk Upload
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -399,6 +489,43 @@ export const ProductManagement = () => {
                   </Button>
                 </DialogFooter>
               </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isBulkUploadOpen} onOpenChange={setIsBulkUploadOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Bulk Upload Products</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV file with product data. The file should have the
+                  following headers: name, description, price, sku, brand,
+                  category, stock_quantity, min_order_quantity, unit, image_url.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Label htmlFor="csv-file">CSV File</Label>
+                <Input
+                  id="csv-file"
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) =>
+                    setCsvFile(e.target.files ? e.target.files[0] : null)
+                  }
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsBulkUploadOpen(false)}
+                  disabled={isUploading}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleBulkUpload} disabled={isUploading}>
+                  {isUploading ? "Uploading..." : "Upload"}
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>

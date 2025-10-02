@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Database } from '@/integrations/supabase/types';
 
 type Product = Database['public']['Tables']['products']['Row'] & {
@@ -15,6 +16,7 @@ interface ProductCardDBProps {
 }
 
 export const ProductCardDB = ({ product, onAddToCart }: ProductCardDBProps) => {
+  const { isAuthenticated } = useAuth();
   const [quantity, setQuantity] = useState(product.min_order_quantity || 1);
 
   const handleQuantityChange = (change: number) => {
@@ -74,8 +76,14 @@ export const ProductCardDB = ({ product, onAddToCart }: ProductCardDBProps) => {
           
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">per {product.unit}</p>
+              {isAuthenticated ? (
+                <>
+                  <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">per {product.unit}</p>
+                </>
+              ) : (
+                <p className="text-sm font-medium text-primary">Login to see price</p>
+              )}
               {product.min_order_quantity > 1 && (
                 <p className="text-xs text-muted-foreground">Min order: {product.min_order_quantity}</p>
               )}
@@ -88,7 +96,7 @@ export const ProductCardDB = ({ product, onAddToCart }: ProductCardDBProps) => {
       </CardContent>
       
       <CardFooter className="p-4 pt-0 space-y-3">
-        {isInStock ? (
+        {isAuthenticated && isInStock ? (
           <>
             <div className="flex items-center justify-center gap-2 w-full">
               <Button 
@@ -117,6 +125,10 @@ export const ProductCardDB = ({ product, onAddToCart }: ProductCardDBProps) => {
               Add to Cart
             </Button>
           </>
+        ) : !isAuthenticated ? (
+          <Button disabled className="w-full">
+            Login to Add to Cart
+          </Button>
         ) : (
           <Button disabled className="w-full">
             Out of Stock

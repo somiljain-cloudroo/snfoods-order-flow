@@ -30,11 +30,13 @@ export const UserInvitation = () => {
     setSending(true);
 
     try {
-      // Simple email invitation without edge function - admins can manually send signup links
-      toast({
-        title: "Feature Coming Soon",
-        description: "Email invitations will be available once RESEND_API_KEY is configured in Supabase secrets",
+      const { error } = await supabase.functions.invoke("send-invite", {
+        body: { ...inviteData, siteUrl: window.location.origin },
       });
+
+      if (error) {
+        throw new Error(error.message);
+      }
 
       toast({
         title: "Invitation Sent!",

@@ -6,8 +6,21 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
+import { ProfilePage } from "./pages/ProfilePage";
+import { AuthConfirmPage } from "./pages/AuthConfirmPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { useAuth } from "./hooks/useAuth";
+import { Navigate } from "react-router-dom";
 
 const queryClient = new QueryClient();
+
+const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) {
+    return <div>Loading...</div>; // Or a spinner
+  }
+  return isAuthenticated ? <>{children}</> : <Navigate to="/" />;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -17,7 +30,10 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/auth/confirm" element={<AuthConfirmPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

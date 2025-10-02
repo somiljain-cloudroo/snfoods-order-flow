@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,41 +29,27 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, RefreshCw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Plus, Edit, Trash2, RefreshCw, Upload } from "lucide-react";
+import { Badge, badgeVariants } from "@/components/ui/badge";
+import Papa from "papaparse";
 
-interface Account {
-  id: string;
-  account_number: string | null;
-  name: string;
-  account_type: string;
-  email: string | null;
-  phone: string | null;
-  website: string | null;
-  billing_address: string | null;
-  billing_city: string | null;
-  billing_state: string | null;
-  billing_country: string | null;
-  billing_postal_code: string | null;
-  shipping_address: string | null;
-  shipping_city: string | null;
-  shipping_state: string | null;
-  shipping_country: string | null;
-  shipping_postal_code: string | null;
-  credit_limit: number;
-  payment_terms: number;
-  is_active: boolean;
-  notes: string | null;
-  tax_id: string | null;
-}
+type Account = Tables<"accounts">;
 
 export const AccountManagement = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const { toast } = useToast();
+
+  const formatCurrency = (value: number | null | undefined) => {
+    return value != null ? `$${value.toFixed(2)}` : "—";
+  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -156,15 +142,15 @@ export const AccountManagement = () => {
       shipping_state: account.shipping_state || "",
       shipping_country: account.shipping_country || "",
       shipping_postal_code: account.shipping_postal_code || "",
-      credit_limit: account.credit_limit.toString(),
-      payment_terms: account.payment_terms.toString(),
+      credit_limit: account.credit_limit != null ? account.credit_limit.toString() : "",
+      payment_terms: account.payment_terms != null ? account.payment_terms.toString() : "",
       notes: account.notes || "",
       tax_id: account.tax_id || "",
     });
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     try {
@@ -184,8 +170,8 @@ export const AccountManagement = () => {
         shipping_state: formData.shipping_state || null,
         shipping_country: formData.shipping_country || null,
         shipping_postal_code: formData.shipping_postal_code || null,
-        credit_limit: parseFloat(formData.credit_limit) || 0,
-        payment_terms: parseInt(formData.payment_terms),
+        credit_limit: formData.credit_limit === "" ? null : parseFloat(formData.credit_limit),
+        payment_terms: formData.payment_terms === "" ? null : parseInt(formData.payment_terms, 10),
         notes: formData.notes || null,
         tax_id: formData.tax_id || null,
       };
@@ -249,6 +235,92 @@ export const AccountManagement = () => {
     }
   };
 
+  const handleBulkUpload = async () => {
+    if (!csvFile) {
+      toast({
+        title: "No file selected",
+        description: "Please select a CSV file to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    Papa.parse(csvFile, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const accountsToInsert = results.data
+          .map((row: any) => ({
+            name: row.name,
+            account_type: row.account_type || "business",
+            email: row.email || null,
+            phone: row.phone || null,
+            website: row.website || null,
+            billing_address: row.billing_address || null,
+            billing_city: row.billing_city || null,
+            billing_state: row.billing_state || null,
+            billing_country: row.billing_country || null,
+            billing_postal_code: row.billing_postal_code || null,
+            shipping_address: row.shipping_address || null,
+            shipping_city: row.shipping_city || null,
+            shipping_state: row.shipping_state || null,
+            shipping_country: row.shipping_country || null,
+            shipping_postal_code: row.shipping_postal_code || null,
+            credit_limit: row.credit_limit ? parseFloat(row.credit_limit) : null,
+            payment_terms: row.payment_terms ? parseInt(row.payment_terms, 10) : null,
+            notes: row.notes || null,
+            tax_id: row.tax_id || null,
+          }))
+          .filter((acc) => acc.name);
+
+        if (accountsToInsert.length === 0) {
+          toast({
+            title: "No valid accounts found",
+            description: "The CSV file is empty or does not contain valid account data.",
+            variant: "destructive",
+          });
+          setIsUploading(false);
+          return;
+        }
+
+        try {
+          const { error } = await supabase.from("accounts").insert(accountsToInsert);
+
+          if (error) throw error;
+
+          toast({
+            title: "Success",
+            description: `${accountsToInsert.length} accounts uploaded successfully.`,
+          });
+
+          setIsBulkUploadOpen(false);
+          setCsvFile(null);
+          fetchAccounts();
+        } catch (error) {
+          console.error("Error bulk inserting accounts:", error);
+          toast({
+            title: "Error",
+            description: "Failed to upload accounts. Check the console for details.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsUploading(false);
+        }
+      },
+      error: (error) => {
+        console.error("Error parsing CSV:", error);
+        toast({
+          title: "Error",
+          description: "Failed to parse CSV file.",
+          variant: "destructive",
+        });
+        setIsUploading(false);
+      },
+    });
+  };
+
   if (loading) {
     return (
       <Card>
@@ -279,6 +351,10 @@ export const AccountManagement = () => {
           <Button onClick={fetchAccounts} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
+          </Button>
+          <Button onClick={() => setIsBulkUploadOpen(true)} variant="outline">
+            <Upload className="h-4 w-4 mr-2" />
+            Bulk Upload
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -451,6 +527,42 @@ export const AccountManagement = () => {
               </form>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={isBulkUploadOpen} onOpenChange={setIsBulkUploadOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Bulk Upload Accounts</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV file with account data. The file should have a
+                  header row with column names matching the account fields.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Label htmlFor="csv-file">CSV File</Label>
+                <Input
+                  id="csv-file"
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) =>
+                    setCsvFile(e.target.files ? e.target.files[0] : null)
+                  }
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsBulkUploadOpen(false)}
+                  disabled={isUploading}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleBulkUpload} disabled={isUploading}>
+                  {isUploading ? "Uploading..." : "Upload"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -479,10 +591,10 @@ export const AccountManagement = () => {
                   </TableCell>
                   <TableCell>{account.name}</TableCell>
                   <TableCell className="capitalize">{account.account_type}</TableCell>
-                  <TableCell>{account.email}</TableCell>
-                  <TableCell>${account.credit_limit.toFixed(2)}</TableCell>
+                  <TableCell>{account.email || "—"}</TableCell>
+                  <TableCell>{formatCurrency(account.credit_limit)}</TableCell>
                   <TableCell>
-                    <Badge variant={account.is_active ? "default" : "secondary"}>
+                    <Badge className={badgeVariants({ variant: account.is_active ? "default" : "secondary" })}>
                       {account.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
