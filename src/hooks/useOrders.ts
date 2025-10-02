@@ -221,24 +221,6 @@ export function useOrders() {
 
       if (historyError) throw historyError;
 
-      // TODO: Send approval email - temporarily disabled due to build issues
-      // Will be re-enabled once build system resolves type checking
-      /*
-      if (newStatus === 'approved') {
-        try {
-          const { error: emailError } = await supabase.functions.invoke('send-order-approval-email', {
-            body: { orderId }
-          });
-
-          if (emailError) {
-            console.error("Error sending approval email:", emailError);
-          }
-        } catch (emailErr) {
-          console.error("Failed to send approval email:", emailErr);
-        }
-      }
-      */
-
       return { success: true };
     } catch (err) {
       console.error('Error updating order status:', err);
