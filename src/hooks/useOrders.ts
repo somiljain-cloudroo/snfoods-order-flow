@@ -221,6 +221,21 @@ export function useOrders() {
 
       if (historyError) throw historyError;
 
+      // Send approval email if status is approved
+      if (newStatus === 'approved') {
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-order-approval-email', {
+            body: { orderId }
+          });
+
+          if (emailError) {
+            console.error("Error sending approval email:", emailError);
+          }
+        } catch (emailErr) {
+          console.error("Failed to send approval email:", emailErr);
+        }
+      }
+
       return { success: true };
     } catch (err) {
       console.error('Error updating order status:', err);
