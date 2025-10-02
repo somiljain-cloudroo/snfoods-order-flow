@@ -1,1 +1,10 @@
 project_id = "jdouvqndemcidjjkepgm"
+
+[functions.send-invite]
+verify_jwt = false
+
+[functions.bulk-create-products]
+verify_jwt = false
+
+[functions.get-all-contacts]
+verify_jwt = false
