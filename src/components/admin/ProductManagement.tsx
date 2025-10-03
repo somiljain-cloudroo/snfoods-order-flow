@@ -269,9 +269,9 @@ export const ProductManagement = () => {
         }
 
         try {
-          const { error } = await supabase
-            .from("products")
-            .insert(productsToInsert);
+          const { error } = await supabase.functions.invoke("bulk-create-products", {
+            body: { products: productsToInsert },
+          });
 
           if (error) throw error;
 
@@ -500,6 +500,13 @@ export const ProductManagement = () => {
                   Upload a CSV file with product data. The file should have the
                   following headers: name, description, price, sku, brand,
                   category, stock_quantity, min_order_quantity, unit, image_url.
+                  <a
+                    href="/sample-products.csv"
+                    download
+                    className="text-blue-500 hover:underline ml-2"
+                  >
+                    Download sample file
+                  </a>
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">

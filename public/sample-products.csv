@@ -1,0 +1,3 @@
+name,description,price,sku,brand,category,stock_quantity,min_order_quantity,unit,image_url
+"Sample Product 1","This is a sample product.",19.99,SP-001,"Sample Brand","Sample Category",100,1,each,""
+"Sample Product 2","Another sample product.",29.99,SP-002,"Sample Brand","Sample Category",50,1,each,""

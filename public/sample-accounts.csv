@@ -1,0 +1,3 @@
+name,account_type,email,phone,website,billing_address,billing_city,billing_state,billing_country,billing_postal_code,shipping_address,shipping_city,shipping_state,shipping_country,shipping_postal_code,credit_limit,payment_terms,notes,tax_id
+"Sample Business","business","contact@samplebusiness.com","123-456-7890","http://samplebusiness.com","123 Main St","Anytown","Anystate","USA","12345","123 Main St","Anytown","Anystate","USA","12345",5000,30,"Notes for sample business","TAXID123"
+"Sample Individual","individual","individual@example.com","098-765-4321","","456 Oak Ave","Someville","Somestate","USA","54321","456 Oak Ave","Someville","Somestate","USA","54321",1000,15,"Notes for sample individual",""

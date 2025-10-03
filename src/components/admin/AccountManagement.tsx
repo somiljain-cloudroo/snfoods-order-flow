@@ -286,7 +286,9 @@ export const AccountManagement = () => {
         }
 
         try {
-          const { error } = await supabase.from("accounts").insert(accountsToInsert);
+          const { error } = await supabase.functions.invoke("bulk-create-accounts", {
+            body: { accounts: accountsToInsert },
+          });
 
           if (error) throw error;
 
@@ -535,6 +537,13 @@ export const AccountManagement = () => {
                 <DialogDescription>
                   Upload a CSV file with account data. The file should have a
                   header row with column names matching the account fields.
+                  <a
+                    href="/sample-accounts.csv"
+                    download
+                    className="text-blue-500 hover:underline ml-2"
+                  >
+                    Download sample file
+                  </a>
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
