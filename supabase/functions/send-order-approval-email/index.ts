@@ -18,7 +18,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const payload = await req.json();
-    const order = payload.record || payload.order; // Accept both trigger and client-side payloads
+    const order = payload.record || payload.order;
     if (!order) {
       return new Response(JSON.stringify({ error: "Invalid request body" }), {
         status: 400,
@@ -26,20 +26,51 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", order.customer_id)
-      .single();
+    let customerEmail: string | null = null;
+    let customerName: string | null = null;
 
-    if (profileError || !profile) {
-      throw new Error("Failed to fetch customer profile or profile not found.");
+    if (order.customer_id) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", order.customer_id)
+        .single();
+      if (profileError || !profile) {
+        throw new Error(`Failed to fetch customer profile for id: ${order.customer_id}`);
+      }
+      customerEmail = profile.email;
+      customerName = profile.full_name;
+    } else if (order.account_id) {
+      const { data: relationship, error: relError } = await supabase
+        .from("contact_account_relationships")
+        .select("contact_id")
+        .eq("account_id", order.account_id)
+        .limit(1)
+        .single();
+      if (relError || !relationship) {
+        throw new Error(`Failed to find contact for account id: ${order.account_id}`);
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", relationship.contact_id)
+        .single();
+      if (profileError || !profile) {
+        throw new Error(`Failed to fetch contact profile for id: ${relationship.contact_id}`);
+      }
+      customerEmail = profile.email;
+      customerName = profile.full_name;
+    }
+
+    if (!customerEmail) {
+      throw new Error("Could not determine customer email for the order.");
     }
 
     const emailHtml = `
       <div>
         <h1>Order Approved!</h1>
-        <p>Hi ${profile.full_name || 'Valued Customer'},</p>
+        <p>Hi ${customerName || 'Valued Customer'},</p>
         <p>Your order #${order.order_number} has been approved.</p>
         <p>Total: $${order.total_amount.toFixed(2)}</p>
         <p>We'll notify you again once it has shipped.</p>
@@ -49,7 +80,7 @@ Deno.serve(async (req: Request) => {
 
     const requestBody = {
       personalizations: [{
-        to: [{ email: profile.email }],
+        to: [{ email: customerEmail }],
         subject: `Order #${order.order_number} Approved`,
       }],
       from: { email: "s.jain@cloudroo.com.au", name: "SN Foods" },
