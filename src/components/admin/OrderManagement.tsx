@@ -119,6 +119,14 @@ export const OrderManagement = () => {
 
       if (error) throw error;
 
+      if (newStatus === 'approved') {
+        // The function is now self-contained and will fetch the customer email.
+        // We only need to pass the order object.
+        await supabase.functions.invoke('send-order-approval-email', {
+          body: { order: selectedOrder },
+        });
+      }
+
       // Insert status history
       await supabase
         .from("order_status_history")
