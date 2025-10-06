@@ -1,15 +1,20 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
-if (!SENDGRID_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error("Missing one or more required environment variables.");
-}
+// The function runs with the permissions of the user who invoked it.
+// To query the database securely, we need to create a new client with the SERVICE_ROLE_KEY.
+const getSupabaseAdmin = () => {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.");
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey);
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -17,8 +22,10 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const payload = await req.json();
     const order = payload.record || payload.order;
+
     if (!order) {
       return new Response(JSON.stringify({ error: "Invalid request body" }), {
         status: 400,
@@ -30,34 +37,34 @@ Deno.serve(async (req: Request) => {
     let customerName: string | null = null;
 
     if (order.customer_id) {
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error } = await supabaseAdmin
         .from("profiles")
         .select("full_name, email")
         .eq("id", order.customer_id)
         .single();
-      if (profileError || !profile) {
-        throw new Error(`Failed to fetch customer profile for id: ${order.customer_id}`);
+      if (error || !profile) {
+        throw new Error(`Failed to fetch customer profile for id: ${order.customer_id}. Reason: ${error?.message}`);
       }
       customerEmail = profile.email;
       customerName = profile.full_name;
     } else if (order.account_id) {
-      const { data: relationship, error: relError } = await supabase
+      const { data: relationship, error: relError } = await supabaseAdmin
         .from("contact_account_relationships")
         .select("contact_id")
         .eq("account_id", order.account_id)
         .limit(1)
         .single();
       if (relError || !relationship) {
-        throw new Error(`Failed to find contact for account id: ${order.account_id}`);
+        throw new Error(`Failed to find contact for account id: ${order.account_id}. Reason: ${relError?.message}`);
       }
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await supabaseAdmin
         .from("profiles")
         .select("full_name, email")
         .eq("id", relationship.contact_id)
         .single();
       if (profileError || !profile) {
-        throw new Error(`Failed to fetch contact profile for id: ${relationship.contact_id}`);
+        throw new Error(`Failed to fetch contact profile for id: ${relationship.contact_id}. Reason: ${profileError?.message}`);
       }
       customerEmail = profile.email;
       customerName = profile.full_name;
@@ -79,15 +86,10 @@ Deno.serve(async (req: Request) => {
     `;
 
     const requestBody = {
-      personalizations: [{
-        to: [{ email: customerEmail }],
-        subject: `Order #${order.order_number} Approved`,
-      }],
-      from: { email: "s.jain@cloudroo.com.au", name: "SN Foods" },
-      content: [{
-        type: "text/html",
-        value: emailHtml,
-      }],
+      personalizations: [{ to: [{ email: customerEmail }] }],
+      from: { email: "somiljain@aol.com", name: "SN Foods" },
+      content: [{ type: "text/html", value: emailHtml }],
+      subject: `Order #${order.order_number} Approved`,
     };
 
     const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
