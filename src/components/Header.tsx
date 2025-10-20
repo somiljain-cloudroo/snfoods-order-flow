@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import logo from "@/assets/sn-logo.png";
+import logo from "@/assets/cloudroo-logo.png";
 
 interface HeaderProps {
   cartCount?: number;
@@ -40,10 +40,10 @@ export const Header = ({ cartCount = 0, onCartClick, onLoginClick }: HeaderProps
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <img src={logo} alt="SN Food Supplies" className="h-10 w-10" />
+          <img src={logo} alt="CloudrooFoods" className="h-10 w-10" />
           <div className="hidden sm:block">
             <h1 className="text-lg font-bold bg-gradient-primary bg-clip-text text-transparent">
-              SN Food Supplies
+              CloudrooFoods
             </h1>
             <p className="text-xs text-muted-foreground">Premium Food Distribution</p>
           </div>

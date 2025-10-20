@@ -1,4 +1,4 @@
-// Sample product data based on SN Food Supplies actual inventory
+// Sample product data based on Cloudroo Food Supplies actual inventory
 export const products = [
   {
     id: "1",

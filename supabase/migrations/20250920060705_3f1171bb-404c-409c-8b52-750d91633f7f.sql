@@ -271,8 +271,8 @@ INSERT INTO public.categories (name, description, is_active) VALUES
 
 -- Insert sample products
 INSERT INTO public.products (name, description, brand, category_id, sku, price, unit, min_order_quantity, stock_quantity, is_active) VALUES
-('Original Potato Chips', 'Classic salted potato chips', 'SN Foods', (SELECT id FROM public.categories WHERE name = 'Chips & Snacks'), 'SNF-001', 3.50, 'bag', 1, 100, true),
-('BBQ Flavored Chips', 'Smoky barbecue flavored potato chips', 'SN Foods', (SELECT id FROM public.categories WHERE name = 'Chips & Snacks'), 'SNF-002', 3.75, 'bag', 1, 80, true),
-('Mixed Nuts Premium', 'Premium mixed nuts selection', 'SN Foods', (SELECT id FROM public.categories WHERE name = 'Health Foods'), 'SNF-003', 8.99, 'pack', 1, 50, true),
-('Chocolate Bars Assorted', 'Assorted chocolate bars', 'SN Foods', (SELECT id FROM public.categories WHERE name = 'Confectionery'), 'SNF-004', 2.25, 'bar', 6, 200, true),
-('Natural Spring Water', 'Pure natural spring water', 'SN Foods', (SELECT id FROM public.categories WHERE name = 'Beverages'), 'SNF-005', 1.50, 'bottle', 12, 300, true);
+('Original Potato Chips', 'Classic salted potato chips', 'CloudrooFoods', (SELECT id FROM public.categories WHERE name = 'Chips & Snacks'), 'SNF-001', 3.50, 'bag', 1, 100, true),
+('BBQ Flavored Chips', 'Smoky barbecue flavored potato chips', 'CloudrooFoods', (SELECT id FROM public.categories WHERE name = 'Chips & Snacks'), 'SNF-002', 3.75, 'bag', 1, 80, true),
+('Mixed Nuts Premium', 'Premium mixed nuts selection', 'CloudrooFoods', (SELECT id FROM public.categories WHERE name = 'Health Foods'), 'SNF-003', 8.99, 'pack', 1, 50, true),
+('Chocolate Bars Assorted', 'Assorted chocolate bars', 'CloudrooFoods', (SELECT id FROM public.categories WHERE name = 'Confectionery'), 'SNF-004', 2.25, 'bar', 6, 200, true),
+('Natural Spring Water', 'Pure natural spring water', 'CloudrooFoods', (SELECT id FROM public.categories WHERE name = 'Beverages'), 'SNF-005', 1.50, 'bottle', 12, 300, true);
